@@ -11,6 +11,7 @@ Tile** createBoard(const int n_rows, const int n_cols) {
 		for(int j = 0; j < n_cols; j++) {
 			board[i][j].discovered = 0;
 			board[i][j].content = 0;
+			board[i][j].flagged = 0;
 		}
 	}
 

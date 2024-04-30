@@ -8,6 +8,7 @@
 struct Tile {
 	uint8_t discovered;
 	uint8_t content;
+    uint8_t flagged;
 } typedef Tile;
 
 Tile** createBoard(const int n_rows, const int n_cols);
