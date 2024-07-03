@@ -20,6 +20,9 @@ void boardToString(Board *board, char *buffer) {
 					buffer[i*board->n_cols+j] = '*';
 				}
 			}
+			else if(board->tiles[i][j].flagged) {
+				buffer[i*board->n_cols+j] = 'F';
+			}
 			else {
 				buffer[i*board->n_cols+j] = '#';
 			}

@@ -53,7 +53,7 @@ void mainloop() {
                 quit = 1;
             }
         }
-        else {
+        else if(game_state == PLAYING) {
             MEVENT mouse_event;
 
             if(option == KEY_MOUSE) {
@@ -71,25 +71,45 @@ void mainloop() {
                                 boardToString(board, board_str);
                                 displayBoard(board_str, board->n_rows, board->n_cols);
                                 if(board->n_discovered == board->n_rows * board->n_cols - n_mines) {
-                                    printw("YOU WIN");
-                                    refresh();
+                                    started = 0;
+                                    game_state = GAME_ENDED;
                                 }    
                             }
                             else {
                                 started = 0;
-                                game_state = MENU;
-                                displayMenu();
+                                game_state = GAME_ENDED;
                             }
                             
                         }
-                        else if(mouse_event.bstate & BUTTON2_CLICKED) {
-                            // place flag
+                        else if(mouse_event.bstate & BUTTON3_CLICKED) {
+                            placeFlag(board, row, col);
+                            boardToString(board, board_str);
+                            displayBoard(board_str, board->n_rows, board->n_cols);
                         }
                     }
                 }
             }
-            else if(tolower(option) == 'q') {
+            else if(tolower(option) == 'm') {
                 started = 0;
+                game_state = MENU;
+                displayMenu();
+            }
+        }
+        else {
+            clear();
+            refresh();
+            if(tolower(option) == 'r') {
+                int n_cols = board->n_cols;
+                int n_rows = board->n_rows;
+
+                destroyBoard(board);
+                board = createBoard(n_rows, n_cols);
+                boardToString(board, board_str);
+                displayBoard(board_str, board->n_rows, board->n_cols);
+
+                game_state = PLAYING;
+            }
+            else if(tolower(option) == 'm') {
                 game_state = MENU;
                 displayMenu();
             }
@@ -154,6 +174,8 @@ void displayBoard(const char *board_str, const int board_rows, const int board_c
             cursor_x++;
         }
     }
+
+    mvprintw(win_rows - 1, 0, "(m) Menu");
 
     refresh();
 }

@@ -78,6 +78,8 @@ void populateBoard(Board *board, const int n_mines, const int row_start, const i
 int discoverTile(Board *board, const int row, const int col) {
 	if(board->tiles[row][col].content == MINE)
 		return 0;
+	if(board->tiles[row][col].discovered)
+		return discoverFlagged(board, row, col);
 	
 	board->tiles[row][col].discovered = 1;
 	board->n_discovered++;
@@ -104,4 +106,38 @@ void discoverNeighbors(Board *board, const int row, const int col) {
 			}
 		}
 	}
+}
+
+void placeFlag(Board *board, const int row, const int col) {
+	if(board->tiles[row][col].flagged)
+		board->tiles[row][col].flagged = 0;
+	else
+		board->tiles[row][col].flagged = 1;
+}
+
+int discoverFlagged(Board *board, const int row, const int col) {
+	int n_flags = 0;
+	
+	// count flags placed in neighborhood
+	for(int i = -1; i <= 1; i++) {
+		for(int j = -1; j <= 1; j++) {
+			if(isInBounds(board->n_rows, board->n_cols, row + i, col + j) && board->tiles[row+i][col+j].flagged)
+				n_flags++;
+		}
+	}
+
+	// if the number of flags is correct, check that they are placed on top of mines
+	if(board->tiles[row][col].content == n_flags) {
+		for(int i = -1; i <= 1; i++) {
+			for(int j = -1; j <= 1; j++) {
+				if(isInBounds(board->n_rows, board->n_cols, row + i, col + j) && board->tiles[row+i][col+j].flagged) {
+					if(board->tiles[row+i][col+j].content != MINE)
+						return 0;
+				}
+			}
+		}		
+		discoverNeighbors(board, row, col);
+	}
+
+	return 1;
 }

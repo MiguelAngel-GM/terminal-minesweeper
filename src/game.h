@@ -7,7 +7,8 @@
 
 enum GameState {
     MENU,
-    PLAYING
+    PLAYING,
+	GAME_ENDED
 };
 
 struct Tile {
@@ -34,5 +35,9 @@ void populateBoard(Board *board, const int n_mines, const int row_start, const i
 int discoverTile(Board *board, const int row, const int col);
 
 void discoverNeighbors(Board *board, const int row, const int col);
+
+void placeFlag(Board *board, const int row, const int col);
+
+int discoverFlagged(Board *board, const int row, const int col);
 
 #endif
