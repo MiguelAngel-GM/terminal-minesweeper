@@ -1,4 +1,5 @@
 #include "game.h"
+#include "utils.h"
 #include <stdlib.h>
 
 Board* createBoard(const int n_rows, const int n_cols) {
@@ -18,6 +19,7 @@ Board* createBoard(const int n_rows, const int n_cols) {
 	Board *board = (Board*)malloc(sizeof(Board));
 	board->n_cols = n_cols;
 	board->n_rows = n_rows;
+	board->n_discovered = 0;
 	board->tiles = tiles;
 
 	return board;
@@ -30,10 +32,6 @@ void destroyBoard(Board *board) {
 
 	free(board->tiles);
 	free(board);
-}
-
-int isInBounds(const int n_rows, const int n_cols, const int row, const int col) {
-	return (row >= 0) && (col >= 0) && (row < n_rows) && (col < n_cols);
 }
 
 void updateNeighbors(Board *board, const int row, const int col) {
@@ -57,7 +55,19 @@ void populateBoard(Board *board, const int n_mines, const int row_start, const i
 		int row = rand() % board->n_rows;
 		int col = rand() % board->n_cols;
 		Tile *t = &(board->tiles[row][col]);
-		if(t->content != MINE && (row != row_start || col != col_start)) {
+		
+		uint8_t startNeighbor = 0;
+
+		for(int i = -1; i <= 1; i++) {
+			for(int j = -1; j <= 1; j++) {
+				if(row == row_start + i && col == col_start + j) {
+					startNeighbor = 1;
+					break;
+				}
+			}
+		}
+		
+		if(t->content != MINE && !startNeighbor) {
 			t->content = MINE;
 			updateNeighbors(board, row, col);
 			placed_mines++;
@@ -65,20 +75,32 @@ void populateBoard(Board *board, const int n_mines, const int row_start, const i
 	}
 }
 
-void board_to_string(Board *board, char *buffer) {
+int discoverTile(Board *board, const int row, const int col) {
+	if(board->tiles[row][col].content == MINE)
+		return 0;
+	
+	board->tiles[row][col].discovered = 1;
+	board->n_discovered++;
+	if(board->tiles[row][col].content == 0) {
+		discoverNeighbors(board, row, col);
+	}
 
-	for(int i = 0; i < board->n_rows; i++) {
-		for(int j = 0; j < board->n_cols; j++) {
-			if(board->tiles[i][j].discovered) {
-				if(board->tiles[i][j].content != MINE) {
-					buffer[i*board->n_cols+j] = board->tiles[i][j].content + '0';
+	return 1;
+}
+
+void discoverNeighbors(Board *board, const int row, const int col) {
+	for(int i = -1; i <= 1; i++) {
+		for(int j = -1; j <= 1; j++) {
+			int row_neighbor = row + i;
+			int col_neighbor = col + j;
+			if(isInBounds(board->n_rows, board->n_cols, row_neighbor, col_neighbor)) {
+				if(board->tiles[row_neighbor][col_neighbor].content != MINE && !board->tiles[row_neighbor][col_neighbor].discovered) {
+					board->tiles[row_neighbor][col_neighbor].discovered = 1;
+					board->n_discovered++;
+					if(board->tiles[row_neighbor][col_neighbor].content == 0) {
+						discoverNeighbors(board, row_neighbor, col_neighbor);
+					}
 				}
-				else {
-					buffer[i*board->n_cols+j] = '*';
-				}
-			}
-			else {
-				buffer[i*board->n_cols+j] = '#';
 			}
 		}
 	}

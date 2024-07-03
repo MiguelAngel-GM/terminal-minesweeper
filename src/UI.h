@@ -5,10 +5,10 @@
 
 void mainloop();
 
-void display_menu();
+void displayMenu();
 
-void display_board(const char *board_str, const int board_rows, const int board_cols);
+void displayBoard(const char *board_str, const int board_rows, const int board_cols);
 
-void update_board();
+void updateBoard();
 
 #endif

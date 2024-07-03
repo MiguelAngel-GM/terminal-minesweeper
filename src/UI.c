@@ -1,5 +1,6 @@
 #include "UI.h"
 #include "game.h"
+#include "utils.h"
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
@@ -8,43 +9,45 @@ void mainloop() {
     enum GameState game_state = MENU;
     uint8_t quit = 0, started = 0;
     Board *board = NULL;
-    int board_rows = 0, board_cols = 0, n_mines = 0;
+    int n_mines = 0;
     char *board_str = NULL;
 
     keypad(stdscr, TRUE);
     mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
 
+    curs_set(0);
     cbreak();
 	noecho();
-    display_menu();
+    displayMenu();
     
     while(!quit) {
         int option = getch();
         
         if(game_state == MENU) {    
             if(option == '1' || option == '2' || option == '3') {
+                if(board != NULL)
+                    destroyBoard(board);
+
                 if(option == '1') {
-                    board_rows = 8;
-                    board_cols = 8;
+                    board = createBoard(8, 8);
                     n_mines = 10;
                 }
                 else if(option == '2') {
-                    board_rows = 16;
-                    board_cols = 16;
+                    board = createBoard(16, 16);
                     n_mines = 40;
                 }
                 else {
-                    board_rows = 16;
-                    board_cols = 30;
+                    board = createBoard(16, 30);
                     n_mines = 99;
                 }
 
-                board = createBoard(board_rows, board_cols);
                 game_state = PLAYING;
 
-                board_str = (char*)malloc(board_rows * board_cols * sizeof(char));
-                board_to_string(board, board_str);
-                display_board(board_str, board_rows, board_cols);
+                if(board_str != NULL)
+                    free(board_str);
+                board_str = (char*)malloc(board->n_rows * board->n_cols * sizeof(char));
+                boardToString(board, board_str);
+                displayBoard(board_str, board->n_rows, board->n_cols);
             }
             else if(tolower(option) == 'q') {
                 quit = 1;
@@ -55,23 +58,40 @@ void mainloop() {
 
             if(option == KEY_MOUSE) {
                 if(getmouse(&mouse_event) == OK) {
-                    if(mouse_event.bstate & BUTTON1_CLICKED) {
-                        if(started) {
-
+                    int row, col;
+                    
+                    if(clickToBoardCoordinates(board, mouse_event.x, mouse_event.y, &row, &col)) {
+                        if(mouse_event.bstate & BUTTON1_CLICKED) {
+                            if(!started) {
+                                populateBoard(board, n_mines, row, col);
+                                started = 1;
+                            }
+                            
+                            if(discoverTile(board, row, col)) {
+                                boardToString(board, board_str);
+                                displayBoard(board_str, board->n_rows, board->n_cols);
+                                if(board->n_discovered == board->n_rows * board->n_cols - n_mines) {
+                                    printw("YOU WIN");
+                                    refresh();
+                                }    
+                            }
+                            else {
+                                started = 0;
+                                game_state = MENU;
+                                displayMenu();
+                            }
+                            
                         }
-                        else {
-                            started = 1;
+                        else if(mouse_event.bstate & BUTTON2_CLICKED) {
+                            // place flag
                         }
-                    }
-                    else if(mouse_event.bstate & BUTTON2_CLICKED) {
-                        // place flag
                     }
                 }
             }
             else if(tolower(option) == 'q') {
                 started = 0;
                 game_state = MENU;
-                display_menu();
+                displayMenu();
             }
         }
     }
@@ -84,7 +104,7 @@ void mainloop() {
     }
 }
 
-void display_menu() {
+void displayMenu() {
     char *text[] = {
         "MINESWEEPER",
         "(1) Easy mode",
@@ -107,7 +127,7 @@ void display_menu() {
     refresh();
 }
 
-void display_board(const char *board_str, const int board_rows, const int board_cols) {
+void displayBoard(const char *board_str, const int board_rows, const int board_cols) {
     clear();
 
     int win_rows, win_cols;
@@ -116,10 +136,17 @@ void display_board(const char *board_str, const int board_rows, const int board_
     int cursor_x = win_cols / 2 - board_cols / 2;
     int cursor_y = win_rows / 2 - board_rows / 2;
 
+    for(int i = 0; i < board_cols; i++) {
+        mvprintw(cursor_y - 1, cursor_x + i, "-");
+        mvprintw(cursor_y + board_rows, cursor_x + i, "-");
+    }
+
     for(int i = 0; i < board_rows * board_cols; i++) {
         mvprintw(cursor_y, cursor_x, "%c", board_str[i]);
 
         if((i+1) % board_cols == 0) {
+            mvprintw(cursor_y, cursor_x - board_cols, "|");
+            mvprintw(cursor_y, cursor_x + 1, "|");
             cursor_y++;
             cursor_x = win_cols / 2 - board_cols / 2;
         }
