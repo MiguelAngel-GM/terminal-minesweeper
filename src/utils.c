@@ -1,7 +1,7 @@
 #include "utils.h"
 #include <ncurses.h>
 
-int isInBounds(const int n_rows, const int n_cols, const int row, const int col) {
+bool isInBounds(const int n_rows, const int n_cols, const int row, const int col) {
 	return (row >= 0) && (col >= 0) && (row < n_rows) && (col < n_cols);
 }
 
@@ -30,7 +30,7 @@ void boardToString(Board *board, char *buffer) {
 	}
 }
 
-int clickToBoardCoordinates(Board *board, const int x, const int y, int *row, int *col) {
+bool clickToBoardCoordinates(Board *board, const int x, const int y, int *row, int *col) {
     int win_rows, win_cols;
     getmaxyx(stdscr, win_rows, win_cols);
 

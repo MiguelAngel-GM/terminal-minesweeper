@@ -10,9 +10,9 @@ Board* createBoard(const int n_rows, const int n_cols, const int n_mines) {
 
 	for(int i = 0; i < n_rows; i++) {
 		for(int j = 0; j < n_cols; j++) {
-			tiles[i][j].discovered = 0;
-			tiles[i][j].content = 0;
-			tiles[i][j].flagged = 0;
+			tiles[i][j].discovered = false;
+			tiles[i][j].content = false;
+			tiles[i][j].flagged = false;
 		}
 	}
 
@@ -58,12 +58,12 @@ void populateBoard(Board *board, const int row_start, const int col_start) {
 		int col = rand() % board->n_cols;
 		Tile *t = &(board->tiles[row][col]);
 		
-		uint8_t startNeighbor = 0;
+		bool startNeighbor = false;
 
 		for(int i = -1; i <= 1; i++) {
 			for(int j = -1; j <= 1; j++) {
 				if(row == row_start + i && col == col_start + j) {
-					startNeighbor = 1;
+					startNeighbor = true;
 					break;
 				}
 			}
@@ -77,19 +77,21 @@ void populateBoard(Board *board, const int row_start, const int col_start) {
 	}
 }
 
-int discoverTile(Board *board, const int row, const int col) {
-	if(board->tiles[row][col].content == MINE)
-		return 0;
-	if(board->tiles[row][col].discovered)
-		return discoverFlagged(board, row, col);
-	
-	board->tiles[row][col].discovered = 1;
-	board->n_discovered++;
-	if(board->tiles[row][col].content == 0) {
-		discoverNeighbors(board, row, col);
+bool discoverTile(Board *board, const int row, const int col) {
+	if(!board->tiles[row][col].flagged) {
+		if(board->tiles[row][col].content == MINE)
+			return false;
+		if(board->tiles[row][col].discovered)
+			return discoverFlagged(board, row, col);
+		
+		board->tiles[row][col].discovered = 1;
+		board->n_discovered++;
+		if(board->tiles[row][col].content == 0) {
+			discoverNeighbors(board, row, col);
+		}
 	}
 
-	return 1;
+	return true;
 }
 
 void discoverNeighbors(Board *board, const int row, const int col) {
@@ -115,19 +117,21 @@ void discoverNeighbors(Board *board, const int row, const int col) {
 }
 
 void placeFlag(Board *board, const int row, const int col) {
-	if(board->tiles[row][col].flagged) {
-		board->tiles[row][col].flagged = 0;
-		board->n_flags--;
-	}
-	else {
-		if(board->n_flags < board->n_mines) {
-			board->tiles[row][col].flagged = 1;
-			board->n_flags++;
+	if(!board->tiles[row][col].discovered) {
+		if(board->tiles[row][col].flagged) {
+			board->tiles[row][col].flagged = 0;
+			board->n_flags--;
+		}
+		else {
+			if(board->n_flags < board->n_mines) {
+				board->tiles[row][col].flagged = 1;
+				board->n_flags++;
+			}
 		}
 	}
 }
 
-int discoverFlagged(Board *board, const int row, const int col) {
+bool discoverFlagged(Board *board, const int row, const int col) {
 	int neighbor_flags = 0;
 	
 	// count flags placed in neighborhood
@@ -144,17 +148,17 @@ int discoverFlagged(Board *board, const int row, const int col) {
 			for(int j = -1; j <= 1; j++) {
 				if(isInBounds(board->n_rows, board->n_cols, row + i, col + j) && board->tiles[row+i][col+j].flagged) {
 					if(board->tiles[row+i][col+j].content != MINE)
-						return 0;
+						return false;
 				}
 			}
 		}		
 		discoverNeighbors(board, row, col);
 	}
 
-	return 1;
+	return true;
 }
 
-int allClear(Board *board) {
+bool allClear(Board *board) {
 	return board->n_discovered == board->n_rows * board->n_cols - board->n_mines;
 }
 

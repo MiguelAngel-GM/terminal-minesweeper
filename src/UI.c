@@ -7,7 +7,7 @@
 
 void mainloop() {
     enum GameState game_state = MENU;
-    uint8_t quit = 0, started = 0;
+    bool quit = false, started = false;
     Board *board = NULL;
     char *board_str = NULL;
 
@@ -52,7 +52,7 @@ void mainloop() {
                 displayBoard(board_str, board->n_rows, board->n_cols);
             }
             else if(tolower(option) == 'q') {
-                quit = 1;
+                quit = true;
             }
         }
         else if(game_state == PLAYING) {
@@ -66,25 +66,25 @@ void mainloop() {
                         if(mouse_event.bstate & BUTTON1_CLICKED) {
                             if(!started) {
                                 populateBoard(board, row, col);
-                                started = 1;
+                                started = true;
                             }
                             
                             if(discoverTile(board, row, col)) {
                                 boardToString(board, board_str);
                                 displayBoard(board_str, board->n_rows, board->n_cols);
                                 if(allClear(board)) {
-                                    started = 0;
+                                    started = false;
                                     game_state = GAME_ENDED;
-                                    displayEndMessage(1);
+                                    displayEndMessage(true);
                                 }    
                             }
                             else {
-                                started = 0;
+                                started = false;
                                 game_state = GAME_ENDED;
                                 discoverAllMines(board);
                                 boardToString(board, board_str);
                                 displayBoard(board_str, board->n_rows, board->n_cols);
-                                displayEndMessage(0);
+                                displayEndMessage(false);
                             }
                             
                         }
@@ -97,7 +97,7 @@ void mainloop() {
                 }
             }
             else if(tolower(option) == 'm') {
-                started = 0;
+                started = false;
                 game_state = MENU;
                 displayMenu();
             }
@@ -173,7 +173,8 @@ void displayBoard(const char *board_str, const int board_rows, const int board_c
     }
 
     init_pair(9, COLOR_WHITE, COLOR_RED);   // color pair for flagged tiles
-    init_pair(10, COLOR_WHITE, COLOR_GRAY);  // default color pair
+    init_pair(10, COLOR_BLACK, COLOR_GRAY); // color pair for mines
+    init_pair(11, COLOR_WHITE, COLOR_GRAY);  // default color pair
 
     int win_rows, win_cols;
     getmaxyx(stdscr, win_rows, win_cols);
@@ -182,13 +183,15 @@ void displayBoard(const char *board_str, const int board_rows, const int board_c
     int cursor_y = win_rows / 2 - board_rows / 2;
 
     for(int i = 0; i < board_rows * board_cols; i++) {
-        int color_pair = 10;
-        if(isdigit(board_str[i])) {
+        int color_pair;
+        if(isdigit(board_str[i]))
             color_pair = board_str[i] - '0';
-        }
-        else if(board_str[i] == 'F') {
+        else if(board_str[i] == 'F')
             color_pair = 9;
-        }
+        else if(board_str[i] == '*')
+            color_pair = 10;
+        else
+            color_pair = 11;
 
         attron(COLOR_PAIR(color_pair));
         mvprintw(cursor_y, cursor_x, "%c", board_str[i]);
@@ -208,7 +211,7 @@ void displayBoard(const char *board_str, const int board_rows, const int board_c
     refresh();
 }
 
-void displayEndMessage(uint8_t player_wins) {
+void displayEndMessage(bool player_wins) {
     int win_rows, win_cols;
     getmaxyx(stdscr, win_rows, win_cols);
 

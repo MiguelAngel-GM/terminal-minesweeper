@@ -20,6 +20,6 @@ void displayMenu();
 
 void displayBoard(const char *board_str, const int board_rows, const int board_cols);
 
-void displayEndMessage(uint8_t player_wins);
+void displayEndMessage(bool player_wins);
 
 #endif
